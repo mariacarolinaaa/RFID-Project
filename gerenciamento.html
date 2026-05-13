@@ -123,7 +123,15 @@
         <div class="page-title">Logs de Acesso</div>
         <div class="page-sub">// histórico completo de entradas, saídas e tentativas</div>
       </div>
-      <button class="btn btn-primary" onclick="exportCsv()">↓ Exportar CSV</button>
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn btn-primary" onclick="exportCsv()">
+          ↓ Exportar CSV
+        </button>
+
+        <button class="btn btn-danger" onclick="resetCsv()">
+          ⟲ Resetar CSV
+        </button>
+      </div>
     </div>
     <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
       <button class="btn btn-sm" onclick="filterLogs('')">Todos</button>
@@ -506,6 +514,26 @@ async function deleteColab(id, nome) {
   await loadMonitoring();
 }
 
+async function resetCsv() {
+
+  const confirmar = confirm(
+    "Deseja realmente limpar o CSV?"
+  );
+
+  if (!confirmar) return;
+
+  const response = await fetch(
+    "http://127.0.0.1:5000/api/logs/reset/csv",
+    {
+      method: "DELETE"
+    }
+  );
+
+  const data = await response.json();
+
+  alert(data.message);
+}
+
 /*
   ============================================================
   LOGS
@@ -611,24 +639,35 @@ async function loadMonitoring() {
 */
 function exportCsv() {
   if (!USE_FAKE_DATA) {
-    // AQUI ENTRA O ENDPOINT REAL:
-    // GET /api/logs/export/csv
-    window.location.href = `${API_BASE_URL}/api/logs/export/csv`;
+    window.location.href = "http://127.0.0.1:5000/api/logs/export/csv";
     return;
   }
 
   const header = "tipo,colaborador_nome,tag_rfid,descricao,timestamp\n";
+
   const rows = fakeLogs.map(l => [
-    l.tipo, l.colaborador_nome || "", l.tag_rfid || "", l.descricao || "", l.timestamp || ""
-  ].map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    l.tipo,
+    l.colaborador_nome || "",
+    l.tag_rfid || "",
+    l.descricao || "",
+    l.timestamp || ""
+  ].map(value =>
+    `"${String(value).replaceAll('"', '""')}"`
+  ).join(",")).join("\n");
 
   const csv = header + rows;
-  const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;"
+  });
+
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = "logs_secureaccess.csv";
   a.click();
+
   URL.revokeObjectURL(url);
 }
 
